@@ -6,8 +6,8 @@ import { OrbitControls, useGLTF, Environment, Html } from "@react-three/drei"
 import { useProtoStore } from "@/store/proto-store"
 import type * as THREE from "three"
 
-import { registerZPlane } from "@/lib/zPlaneRegistry"
-import { registerRowPlanes } from "@/lib/rowPlaneRegistry"
+import { registerZPlane } from './planes/zscale/zPlaneRegistry'
+import { registerRowPlanes } from './planes/rows/rowPlaneRegistry'
 
 function MPCModelWithExistingPlanes() {
   const { scene } = useGLTF("/models/prototype_v4_03_02_01.glb")
