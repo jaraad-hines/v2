@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { extractPlaneMetadata } from './blenderMetadataMap';
+import { extractPlaneMetadata } from '../rows/blenderMetadataMap';
 
 let zPlane: THREE.Object3D | null = null;
 let zPlaneMetadata: Record<string, any> | null = null;
