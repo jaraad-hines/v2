@@ -6,14 +6,16 @@ import { OrbitControls, useGLTF, Environment, Html } from "@react-three/drei"
 import { useProtoStore } from "@/store/proto-store"
 import type * as THREE from "three"
 
+import { registerZPlane } from "@/lib/zPlaneRegistry"
+import { registerRowPlanes } from "@/lib/rowPlaneRegistry"
+
 function MPCModelWithExistingPlanes() {
-  const { scene } = useGLTF("/models/prototype_v4_03_01.glb")
+  const { scene } = useGLTF("/models/prototype_v4_03_02_01.glb")
   const modelRef = useRef<THREE.Group>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [cards, setCards] = useState<any[]>([])
 
   useEffect(() => {
-    // Subscribe to store changes safely
     const unsubscribe = useProtoStore.subscribe(
       (state) => ({ isPlaying: state.isPlaying, cards: state.cards }),
       ({ isPlaying, cards }) => {
@@ -22,7 +24,6 @@ function MPCModelWithExistingPlanes() {
       },
     )
 
-    // Initial state
     const state = useProtoStore.getState()
     setIsPlaying(state.isPlaying)
     setCards(state.cards)
@@ -30,12 +31,10 @@ function MPCModelWithExistingPlanes() {
     return unsubscribe
   }, [])
 
-  // Extract existing planes from the GLTF model (keep the detection fix)
   const planeRefs = useMemo(() => {
     const map = new Map<string, THREE.Object3D>()
 
     scene.traverse((obj) => {
-      // Look for meshes that could be planes
       if (
         obj.isMesh &&
         (obj.name.includes("Plane") ||
@@ -47,7 +46,10 @@ function MPCModelWithExistingPlanes() {
       }
     })
 
-    // If no named planes found, create references to the first few meshes
+    // ✅ Register Z Plane and Row Planes
+    registerZPlane(scene)
+    registerRowPlanes(scene)
+
     if (map.size === 0) {
       let count = 0
       scene.traverse((obj) => {
@@ -62,7 +64,6 @@ function MPCModelWithExistingPlanes() {
     return map
   }, [scene])
 
-  // Model rotation when playing
   useFrame((state, delta) => {
     if (modelRef.current && isPlaying) {
       modelRef.current.rotation.y += delta * 0.2
@@ -115,4 +116,4 @@ export function ProtoScene() {
   )
 }
 
-useGLTF.preload("/models/prototype_v4_03_01.glb")
+useGLTF.preload("/models/prototype_v4_03_02_01.glb")

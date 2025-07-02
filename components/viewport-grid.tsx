@@ -1,13 +1,32 @@
 "use client"
 
-import React from "react"
+import React, { useState } from "react"
+import {
+  Maximize2,
+  MoreVertical,
+  Upload,
+  FileText,
+  ImageIcon,
+  Music,
+  Video,
+  Code,
+  Minimize2
+} from "lucide-react"
 
-import { useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Maximize2, MoreVertical, Upload, FileText, ImageIcon, Music, Video, Code, Minimize2 } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu"
+
+// ✅ Z Plane integration
+import { ViewportRendererExtended } from "./ViewportRendererExtended"
+import { getZPlane } from "./zPlaneRegistry"
+import { ScaledZPlane } from "./ScaledZPlane"
 
 interface ViewportData {
   id: string
@@ -59,10 +78,36 @@ export function ViewportGrid() {
     setMaximizedViewport(maximizedViewport === id ? null : id)
   }
 
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case "image": return ImageIcon
+      case "audio": return Music
+      case "video": return Video
+      case "text": return FileText
+      case "code": return Code
+      default: return Upload
+    }
+  }
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case "image": return "bg-orange-500/20 text-orange-400 border-orange-500/30"
+      case "audio": return "bg-purple-500/20 text-purple-400 border-purple-500/30"
+      case "video": return "bg-red-500/20 text-red-400 border-red-500/30"
+      case "text": return "bg-blue-500/20 text-blue-400 border-blue-500/30"
+      case "code": return "bg-green-500/20 text-green-400 border-green-500/30"
+      default: return "bg-gray-500/20 text-gray-400 border-gray-500/30"
+    }
+  }
+
+  const zPlane = getZPlane()
+
   const renderViewportContent = (viewport: ViewportData) => {
+    let contentBlock
+
     switch (viewport.type) {
       case "image":
-        return (
+        contentBlock = (
           <div className="w-full h-full flex items-center justify-center">
             <img
               src={viewport.content || "/placeholder.svg"}
@@ -71,8 +116,9 @@ export function ViewportGrid() {
             />
           </div>
         )
+        break
       case "audio":
-        return (
+        contentBlock = (
           <div className="w-full h-full flex items-center justify-center">
             <audio controls className="w-full">
               <source src={viewport.content} />
@@ -80,8 +126,9 @@ export function ViewportGrid() {
             </audio>
           </div>
         )
+        break
       case "video":
-        return (
+        contentBlock = (
           <div className="w-full h-full flex items-center justify-center">
             <video controls className="max-w-full max-h-full rounded">
               <source src={viewport.content} />
@@ -89,20 +136,23 @@ export function ViewportGrid() {
             </video>
           </div>
         )
+        break
       case "text":
-        return (
+        contentBlock = (
           <div className="w-full h-full p-4 overflow-auto">
             <pre className="text-sm text-gray-300 whitespace-pre-wrap">{viewport.content}</pre>
           </div>
         )
+        break
       case "code":
-        return (
+        contentBlock = (
           <div className="w-full h-full p-4 overflow-auto bg-gray-900 rounded">
             <pre className="text-sm text-green-400 font-mono">{viewport.content}</pre>
           </div>
         )
+        break
       default:
-        return (
+        contentBlock = (
           <div className="w-full h-full flex items-center justify-center text-gray-500">
             <div className="text-center">
               <Upload className="w-12 h-12 mx-auto mb-2 opacity-50" />
@@ -111,40 +161,14 @@ export function ViewportGrid() {
           </div>
         )
     }
-  }
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case "image":
-        return ImageIcon
-      case "audio":
-        return Music
-      case "video":
-        return Video
-      case "text":
-        return FileText
-      case "code":
-        return Code
-      default:
-        return Upload
-    }
-  }
-
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case "image":
-        return "bg-orange-500/20 text-orange-400 border-orange-500/30"
-      case "audio":
-        return "bg-purple-500/20 text-purple-400 border-purple-500/30"
-      case "video":
-        return "bg-red-500/20 text-red-400 border-red-500/30"
-      case "text":
-        return "bg-blue-500/20 text-blue-400 border-blue-500/30"
-      case "code":
-        return "bg-green-500/20 text-green-400 border-green-500/30"
-      default:
-        return "bg-gray-500/20 text-gray-400 border-gray-500/30"
-    }
+    return (
+      <>
+        {contentBlock}
+        <ViewportRendererExtended card_id={viewport.id} content={viewport.content || ""} />
+        {zPlane.mesh && <ScaledZPlane mesh={zPlane.mesh} content={viewport.content || ""} />}
+      </>
+    )
   }
 
   if (maximizedViewport) {
@@ -163,7 +187,9 @@ export function ViewportGrid() {
             <Minimize2 className="w-4 h-4" />
           </Button>
         </div>
-        <Card className="flex-1 border-gray-700 bg-gray-900/50 overflow-hidden">{renderViewportContent(viewport)}</Card>
+        <Card className="flex-1 border-gray-700 bg-gray-900/50 overflow-hidden">
+          {renderViewportContent(viewport)}
+        </Card>
       </div>
     )
   }
@@ -248,8 +274,6 @@ export function ViewportGrid() {
               {/* Content */}
               <div className="h-48 relative">
                 {renderViewportContent(viewport)}
-
-                {/* Drop Zone Overlay */}
                 {viewport.type === "empty" && (
                   <label className="absolute inset-0 cursor-pointer">
                     <input
