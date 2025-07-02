@@ -5,6 +5,7 @@ import { DndContext, type DragEndEvent, DragOverlay, type DragStartEvent } from 
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { InputCard, type InputCardData } from "./input-card"
 import { EnhancedViewport } from "./enhanced-viewport"
+import { ViewportEditor } from "./viewport-editor"
 import { Button } from "@/components/ui/button"
 import { Plus, Minus } from "lucide-react"
 
@@ -25,6 +26,7 @@ export function InputCardBoard() {
   const [cards, setCards] = useState<InputCardData[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
   const [selectedCard, setSelectedCard] = useState<InputCardData | null>(null)
+  const [viewportMode, setViewportMode] = useState<"enhanced" | "editor" | null>(null)
 
   useEffect(() => {
     setIsMounted(true)
@@ -216,15 +218,22 @@ export function InputCardBoard() {
     // Close viewport if deleted card was selected
     if (selectedCard && selectedCard.id === id) {
       setSelectedCard(null)
+      setViewportMode(null)
     }
   }
 
   const handleCardClick = (card: InputCardData) => {
     setSelectedCard(card)
+    setViewportMode("editor")
   }
 
   const handleViewportClose = () => {
     setSelectedCard(null)
+    setViewportMode(null)
+  }
+
+  const handleCardSelect = (card: InputCardData) => {
+    setSelectedCard(card)
   }
 
   // Group cards by rows
@@ -238,18 +247,31 @@ export function InputCardBoard() {
     {} as Record<number, InputCardData[]>,
   )
 
+  // Show viewport editor if a card is selected
+  if (viewportMode === "editor" && selectedCard) {
+    return (
+      <ViewportEditor
+        selectedCard={selectedCard}
+        cards={cards}
+        onClose={handleViewportClose}
+        onUpdate={updateCard}
+        onCardSelect={handleCardSelect}
+      />
+    )
+  }
+
   return (
     <div className="h-full flex flex-col w-full max-w-7xl mx-auto px-6">
       {/* Enhanced Viewport - Positioned in the empty space at top */}
       <div className="mt-6">
-        {selectedCard && (
+        {viewportMode === "enhanced" && selectedCard && (
           <EnhancedViewport selectedCard={selectedCard} onClose={handleViewportClose} onUpdate={updateCard} />
         )}
       </div>
 
       <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         {/* Card Grid Container - Moved down by one row height + gap */}
-        <div className={`flex-1 space-y-6 overflow-y-auto w-full ${selectedCard ? "mt-0" : "mt-[164px]"}`}>
+        <div className={`flex-1 space-y-6 overflow-y-auto w-full ${selectedCard && viewportMode === "enhanced" ? "mt-0" : "mt-[164px]"}`}>
           {Object.entries(cardRows).map(([rowIndex, rowCards]) => (
             <div key={rowIndex} className="w-full">
               <SortableContext items={rowCards.map((card) => card.id)} strategy={verticalListSortingStrategy}>
